@@ -63,6 +63,7 @@ services:
       - TZ=${TZ:-UTC}
       # General
       - ADMINER_PLUGINS=dump-json
+      # Login Servers Plugin
       - ADMINER_SERVERS={
           "[env1] PostgreSQL 12":{
             "driver":"pgsql",
