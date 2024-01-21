@@ -1,0 +1,89 @@
+x-env-file: &env-file
+  env_file: .env
+x-restart: &restart
+  restart: always
+
+services:
+  postgres-12:
+    <<: [*env-file, *restart]
+    image: postgres:12
+    container_name: postgres-12
+    environment:
+      # General
+      - POSTGRES_USER=${POSTGRES_12_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_12_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_12_DB:-postgres}
+      - PG_COLOR=${POSTGRES_12_COLOR:-always}
+      # Locale
+      - LANG=${POSTGRES_12_LOCALE:-en_US.utf8}
+      - TZ=${TZ:-UTC}
+    volumes:
+      - postgres_12_data:/var/lib/postgresql/data
+    ports:
+      - ${POSTGRES_12_PORT:-5432}:5432
+    command: postgres -c log_statement=${POSTGRES_12_LOG_STATEMENT:-none}
+    #healthcheck:
+    #  test: ["CMD-SHELL", "pg_isready -d ${POSTGRES_12_DB:-postgres} -U ${POSTGRES_12_USER:-postgres}"]
+    #  interval: 120s
+    #  timeout: 10s
+    #  retries: 3
+
+  postgres-16:
+    <<: [*env-file, *restart]
+    image: postgres:16
+    container_name: postgres-16
+    environment:
+      # General
+      - POSTGRES_USER=${POSTGRES_16_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_16_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_16_DB:-postgres}
+      - POSTGRES_INITDB_ARGS=${POSTGRES_16_INITDB_ARGS}
+      - PG_COLOR=${POSTGRES_16_COLOR:-always}
+      # Locale
+      - LANG=${POSTGRES_16_LOCALE:-en_US.utf8}
+      - TZ=${TZ:-UTC}
+    volumes:
+      - ./postgres-16:/docker-entrypoint-initdb.d
+      - postgres_16_data:/var/lib/postgresql/data
+    ports:
+      - ${POSTGRES_16_PORT:-5432}:5432
+    command: postgres -c log_statement=${POSTGRES_16_LOG_STATEMENT:-none}
+    #healthcheck:
+    #  test: ["CMD-SHELL", "pg_isready -d ${POSTGRES_16_DB:-postgres} -U ${POSTGRES_16_USER:-postgres}"]
+    #  interval: 120s
+    #  timeout: 10s
+    #  retries: 3
+
+  adminer:
+    <<: [*env-file, *restart]
+    image: adminer:latest
+    container_name: adminer
+    environment:
+      # Timezone
+      - TZ=${TZ:-UTC}
+      # General
+      - ADMINER_PLUGINS=dump-json
+      - ADMINER_SERVERS={
+          "[env1] PostgreSQL 12":{
+            "driver":"pgsql",
+            "server":"${POSTGRES_12_HOST}",
+            "username":"${POSTGRES_12_USER:-postgres}",
+            "password":"${POSTGRES_12_PASSWORD}",
+            "db":"${POSTGRES_12_DB:-postgres}"
+          },
+          "[env2] PostgreSQL 16":{
+            "driver":"pgsql",
+            "server":"${POSTGRES_16_HOST}",
+            "username":"${POSTGRES_16_USER:-postgres}",
+            "password":"${POSTGRES_16_PASSWORD}",
+            "db":"${POSTGRES_16_DB:-postgres}"
+          } ${ADMINER_SERVERS}
+        }
+    volumes:
+      - ./adminer/login-servers.php:/var/www/html/plugins-enabled/login-servers.php
+    ports:
+      - 8080:8080
+
+volumes:
+  postgres_12_data:
+  postgres_16_data:
